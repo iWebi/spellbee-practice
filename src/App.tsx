@@ -14,7 +14,7 @@ function App() {
   const [words, setWords] = useState<WordEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [wordListUrl, setWordListUrl] = useState('https://dev-srmedtechsolutions-files.s3.ap-south-1.amazonaws.com/public/clearwords.txt')
+  const [wordListUrl, setWordListUrl] = useState('https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public/inputwords.txt')
 
   useEffect(() => {
     if (wordListUrl) {
@@ -53,20 +53,15 @@ function App() {
   }
 
   const speakWord = (text: string, slow: boolean = false) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'en-US'
-      utterance.rate = slow ? 0.7 : 1.0
-      
-      const voices = window.speechSynthesis.getVoices()
-      const usVoice = voices.find(voice => voice.lang === 'en-US')
-      if (usVoice) {
-        utterance.voice = usVoice
-      }
-      
-      window.speechSynthesis.speak(utterance)
-    }
+    const audioBaseUrl = 'https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public/audio'
+    const audioFileName = `${text.toLowerCase()}.mp3`
+    const audioUrl = `${audioBaseUrl}/${audioFileName}`
+    
+    const audio = new Audio(audioUrl)
+    audio.playbackRate = slow ? 0.75 : 1.0
+    audio.play().catch(err => {
+      console.error('Error playing audio:', err)
+    })
   }
 
   const getNewWord = () => {
@@ -114,7 +109,7 @@ function App() {
             type="text"
             value={wordListUrl}
             onChange={(e) => setWordListUrl(e.target.value)}
-            placeholder="https://dev-srmedtechsolutions-files.s3.ap-south-1.amazonaws.com/public/clearwords.txt"
+            placeholder="https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public/inputwords.txt"
             style={{ 
               fontSize: '1rem', 
               padding: '0.75rem', 
@@ -162,7 +157,7 @@ function App() {
               type="text"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Type the word here..."
               style={{ 
                 fontSize: '1.2rem', 
