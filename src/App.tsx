@@ -254,53 +254,56 @@ function App() {
     <div className="app-container" style={{ padding: '1rem 2rem 2rem 2rem', maxWidth: '600px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <h1 style={{ margin: 0 }}>🐝 Spelling Bee Practice</h1>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.9rem', color: '#666' }}>👤 {currentUser}</span>
+        <div className="header-buttons" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+          <span className="user-name" style={{ fontSize: '0.9rem', color: '#666', whiteSpace: 'nowrap' }}>👤 {currentUser}</span>
           <button
             onClick={() => setShowHistory(true)}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.5rem 0.8rem',
               fontSize: '0.9rem',
               backgroundColor: '#2196F3',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontWeight: '500'
+              fontWeight: '500',
+              whiteSpace: 'nowrap'
             }}
           >
-            📊 History
+            📊
           </button>
           <button
             onClick={handleClearHistory}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.5rem 0.8rem',
               fontSize: '0.9rem',
               backgroundColor: '#FF9800',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontWeight: '500'
+              fontWeight: '500',
+              whiteSpace: 'nowrap'
             }}
             title="Clear all history"
           >
-            🗑️ Clear
+            🗑️
           </button>
           <button
             onClick={handleLogout}
             style={{
-              padding: '0.5rem 1rem',
+              padding: '0.5rem 0.8rem',
               fontSize: '0.9rem',
               backgroundColor: '#f44336',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontWeight: '500'
+              fontWeight: '500',
+              whiteSpace: 'nowrap'
             }}
           >
-            Logout
+            ⎋
           </button>
         </div>
       </div>

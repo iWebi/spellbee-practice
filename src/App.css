@@ -84,4 +84,19 @@
     margin-top: 0.5rem !important;
     margin-bottom: 1rem !important;
   }
+  
+  /* Compact header buttons on mobile */
+  .header-buttons {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+  
+  .header-buttons button {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .user-name {
+    display: none !important;
+  }
 }
