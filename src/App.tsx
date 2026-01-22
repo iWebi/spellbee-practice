@@ -6,26 +6,51 @@ interface WordEntry {
   primary: string
 }
 
+type GradeLevel = '3-4' | '5-6' | '7-8'
+
 function App() {
   const [word, setWord] = useState<WordEntry | null>(null)
   const [userInput, setUserInput] = useState('')
   const [feedback, setFeedback] = useState('')
   const [score, setScore] = useState(0)
+  const [totalAttempts, setTotalAttempts] = useState(0)
   const [words, setWords] = useState<WordEntry[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [wordListUrl, setWordListUrl] = useState('https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public/inputwords.txt')
+  const [gradeLevel, setGradeLevel] = useState<GradeLevel | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
+  const [wordHistory, setWordHistory] = useState<WordEntry[]>([])
+
+  const getWordListUrl = (grade: GradeLevel): string => {
+    const baseUrl = 'https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public'
+    const gradeMap = {
+      '3-4': '3_4_inputwords.txt',
+      '5-6': '5_6_inputwords.txt',
+      '7-8': '7_8_inputwords.txt'
+    }
+    return `${baseUrl}/${gradeMap[grade]}`
+  }
 
   useEffect(() => {
-    if (wordListUrl) {
+    if (gradeLevel) {
       fetchWords()
     }
-  }, [wordListUrl])
+  }, [gradeLevel])
 
   const fetchWords = async () => {
+    if (!gradeLevel) return
+    
     setLoading(true)
     setError('')
+    setWord(null)
+    setUserInput('')
+    setFeedback('')
+    setScore(0)
+    setTotalAttempts(0)
+    setWordHistory([])
     try {
+      const wordListUrl = getWordListUrl(gradeLevel)
       const response = await fetch(wordListUrl)
       if (!response.ok) {
         throw new Error('Failed to fetch word list')
@@ -41,6 +66,7 @@ function App() {
             primary: spellings[0]
           }
         })
+        .sort((a, b) => a.primary.localeCompare(b.primary))
       if (wordList.length === 0) {
         throw new Error('Word list is empty')
       }
@@ -53,13 +79,38 @@ function App() {
   }
 
   const speakWord = (text: string, slow: boolean = false) => {
+    if (!gradeLevel) return
+    
+    // Stop any currently playing audio
+    if (currentAudio) {
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+    }
+    
     const audioBaseUrl = 'https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public/audio'
     const audioFileName = `${text.toLowerCase()}.mp3`
     const audioUrl = `${audioBaseUrl}/${audioFileName}`
     
     const audio = new Audio(audioUrl)
     audio.playbackRate = slow ? 0.75 : 1.0
+    
+    setCurrentAudio(audio)
+    setIsPlaying(true)
+    
+    audio.onended = () => {
+      setIsPlaying(false)
+      setCurrentAudio(null)
+    }
+    
+    audio.onerror = () => {
+      setIsPlaying(false)
+      setCurrentAudio(null)
+      console.error('Error playing audio:', audioUrl)
+    }
+    
     audio.play().catch(err => {
+      setIsPlaying(false)
+      setCurrentAudio(null)
       console.error('Error playing audio:', err)
     })
   }
@@ -67,16 +118,37 @@ function App() {
   const getNewWord = () => {
     if (words.length === 0) return
     const randomWord = words[Math.floor(Math.random() * words.length)]
+    
+    // Add current word to history before moving to next
+    if (word) {
+      setWordHistory([...wordHistory, word])
+    }
+    
     setWord(randomWord)
     setUserInput('')
     setFeedback('')
     speakWord(randomWord.primary)
   }
 
+  const getPreviousWord = () => {
+    if (wordHistory.length === 0) return
+    
+    const previousWord = wordHistory[wordHistory.length - 1]
+    const newHistory = wordHistory.slice(0, -1)
+    
+    setWordHistory(newHistory)
+    setWord(previousWord)
+    setUserInput('')
+    setFeedback('')
+    speakWord(previousWord.primary)
+  }
+
   const checkSpelling = () => {
     if (!word) return
     const userAnswer = userInput.toLowerCase().trim()
     const isCorrect = word.spellings.some(spelling => spelling.toLowerCase() === userAnswer)
+    
+    setTotalAttempts(totalAttempts + 1)
     
     if (isCorrect) {
       setFeedback('✅ Correct! Well done!')
@@ -98,56 +170,94 @@ function App() {
   return (
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h1>🐝 Spelling Bee Practice</h1>
-      <div style={{ marginBottom: '2rem' }}>
-        <p style={{ fontSize: '1.2rem' }}>Score: {score}</p>
+      
+      <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+        <p style={{ marginBottom: '0.75rem', fontWeight: 'bold' }}>Select Grade Level:</p>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          {(['3-4', '5-6', '7-8'] as GradeLevel[]).map((grade) => (
+            <label key={grade} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="grade"
+                value={grade}
+                checked={gradeLevel === grade}
+                onChange={(e) => setGradeLevel(e.target.value as GradeLevel)}
+                style={{ marginRight: '0.5rem', cursor: 'pointer' }}
+              />
+              <span>Grade {grade}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
-      {!wordListUrl ? (
-        <div>
-          <p style={{ marginBottom: '1rem' }}>Enter the URL to your word list (S3 or any public URL):</p>
-          <input
-            type="text"
-            value={wordListUrl}
-            onChange={(e) => setWordListUrl(e.target.value)}
-            placeholder="https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public/inputwords.txt"
-            style={{ 
-              fontSize: '1rem', 
-              padding: '0.75rem', 
-              width: '100%',
-              marginBottom: '1rem'
-            }}
-          />
-          <button 
-            onClick={() => wordListUrl && fetchWords()} 
-            disabled={!wordListUrl}
-            style={{ fontSize: '1.1rem', padding: '0.75rem 2rem' }}
-          >
-            Load Words
-          </button>
+      {!gradeLevel ? (
+        <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#fff3cd', borderRadius: '8px' }}>
+          <p style={{ fontSize: '1.1rem', color: '#856404' }}>Please select a grade level to begin</p>
         </div>
       ) : loading ? (
         <p>Loading words...</p>
       ) : error ? (
         <div>
           <p style={{ color: '#721c24', marginBottom: '1rem' }}>Error: {error}</p>
-          <button onClick={() => setWordListUrl('')} style={{ padding: '0.75rem 1.5rem' }}>
-            Try Different URL
+          <button onClick={fetchWords} style={{ padding: '0.75rem 1.5rem' }}>
+            Retry
           </button>
         </div>
-      ) : !word ? (
+      ) : words.length > 0 && !word ? (
         <div>
-          <p style={{ marginBottom: '1rem' }}>Loaded {words.length} words</p>
+          <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#e7f3ff', borderRadius: '8px' }}>
+            <p style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              Total Words: {words.length}
+            </p>
+            <p style={{ fontSize: '1rem', color: '#555' }}>
+              Ready to practice Grade {gradeLevel} spelling words
+            </p>
+          </div>
           <button onClick={getNewWord} style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
             Start Practice
           </button>
         </div>
-      ) : (
+      ) : word ? (
         <div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <button onClick={() => speakWord(word.primary)} style={{ marginRight: '0.5rem', padding: '0.75rem 1.5rem' }}>
+          <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <p style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                  Score: {score} / {totalAttempts}
+                </p>
+                <p style={{ fontSize: '0.95rem', color: '#555' }}>
+                  {totalAttempts > 0 ? `${Math.round((score / totalAttempts) * 100)}% correct` : 'No attempts yet'}
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '1.1rem', color: '#555' }}>
+                  Total Words: {words.length}
+                </p>
+                <p style={{ fontSize: '0.95rem', color: '#777' }}>
+                  {words.length - totalAttempts} remaining
+                </p>
+              </div>
+            </div>
+          </div>
+          <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => speakWord(word.primary)} 
+              style={{ 
+                padding: '0.75rem 1.5rem',
+                flex: '1 1 auto',
+                minWidth: '140px'
+              }}
+            >
               🔊 Repeat Word
             </button>
-            <button onClick={() => speakWord(word.primary, true)} style={{ padding: '0.75rem 1.5rem' }}>
+            <button 
+              onClick={() => speakWord(word.primary, true)} 
+              style={{ 
+                padding: '0.75rem 1.5rem',
+                flex: '1 1 auto',
+                minWidth: '140px'
+              }}
+            >
               🐌 Slow Speed
             </button>
           </div>
@@ -163,7 +273,8 @@ function App() {
                 fontSize: '1.2rem', 
                 padding: '0.75rem', 
                 width: '100%',
-                marginBottom: '1rem'
+                marginBottom: '1rem',
+                boxSizing: 'border-box'
               }}
               autoFocus
               autoComplete="off"
@@ -171,26 +282,48 @@ function App() {
               autoCapitalize="off"
               spellCheck="false"
             />
-            <button 
-              onClick={checkSpelling} 
-              disabled={!userInput.trim()}
-              style={{ 
-                fontSize: '1.1rem', 
-                padding: '0.75rem 2rem',
-                marginRight: '0.5rem'
-              }}
-            >
-              Check Spelling
-            </button>
-            <button 
-              onClick={getNewWord}
-              style={{ 
-                fontSize: '1.1rem', 
-                padding: '0.75rem 2rem'
-              }}
-            >
-              Next Word
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button 
+                onClick={checkSpelling} 
+                disabled={!userInput.trim()}
+                style={{ 
+                  fontSize: '1.1rem', 
+                  padding: '0.75rem 2rem',
+                  flex: '1 1 auto',
+                  minWidth: '140px'
+                }}
+              >
+                Check Spelling
+              </button>
+              <button 
+                onClick={getPreviousWord}
+                disabled={isPlaying || wordHistory.length === 0}
+                style={{ 
+                  fontSize: '1.1rem', 
+                  padding: '0.75rem 2rem',
+                  flex: '1 1 auto',
+                  minWidth: '140px',
+                  opacity: (isPlaying || wordHistory.length === 0) ? 0.5 : 1,
+                  cursor: (isPlaying || wordHistory.length === 0) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                ← Previous
+              </button>
+              <button 
+                onClick={getNewWord}
+                disabled={isPlaying}
+                style={{ 
+                  fontSize: '1.1rem', 
+                  padding: '0.75rem 2rem',
+                  flex: '1 1 auto',
+                  minWidth: '140px',
+                  opacity: isPlaying ? 0.5 : 1,
+                  cursor: isPlaying ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Next Word →
+              </button>
+            </div>
           </div>
 
           {feedback && (
@@ -206,7 +339,7 @@ function App() {
             </div>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

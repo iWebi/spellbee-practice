@@ -1,18 +1,24 @@
 #!/bin/bash
 
+# Configuration
+GRADE="3_4"  # Change this to your desired grade (e.g., 3_4_5, 6_7_8, etc.)
+
 # Check if argument is provided
 if [ -z "$1" ]; then
   echo "Usage: $0 <word-or-file>"
   echo "  Single word: $0 accommodation"
   echo "  From file:   $0 words.txt"
+  echo ""
+  echo "Current grade: $GRADE"
+  echo "Audio files will be saved to: audio/$GRADE/"
   exit 1
 fi
 
 INPUT="$1"
 PROJECT_ID="spell-bee-practice"
 
-# Create audio directory if it doesn't exist
-mkdir -p audio
+# Create audio directory with grade subfolder if it doesn't exist
+mkdir -p "audio/$GRADE"
 
 # Set the project
 gcloud config set project $PROJECT_ID 2>/dev/null
@@ -43,12 +49,12 @@ process_word() {
   },
   "voice": {
     "languageCode": "en-US",
-    "name": "en-US-Standard-A",
+    "name": "en-US-Standard-C",
     "ssmlGender": "FEMALE"
   },
   "audioConfig": {
     "audioEncoding": "MP3",
-    "speakingRate": 0.75,
+    "speakingRate": 0.7,
     "pitch": 0.0
   }
 }
@@ -70,11 +76,11 @@ EOF
   fi
 
   # Extract the audio content and decode it
-  cat synthesize-output.json | jq -r '.audioContent' | base64 --decode > "audio/${WORD}.mp3"
+  cat synthesize-output.json | jq -r '.audioContent' | base64 --decode > "audio/$GRADE/${WORD}.mp3"
 
   # Check if audio file was created successfully
-  if [ -s "audio/${WORD}.mp3" ]; then
-    echo "✓ Created: audio/${WORD}.mp3"
+  if [ -s "audio/$GRADE/${WORD}.mp3" ]; then
+    echo "✓ Created: audio/$GRADE/${WORD}.mp3"
     return 0
   else
     echo "✗ Error: Audio file is empty for '$WORD'"
