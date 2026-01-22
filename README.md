@@ -1,73 +1,149 @@
-# React + TypeScript + Vite
+# 🐝 Spelling Bee Practice
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple web application to help my kids practice spelling words for their school spelling bee activities. The app reads words aloud and lets them practice spelling with immediate feedback.
 
-Currently, two official plugins are available:
+**Live Demo:** http://kids-spellbee-practice.s3-website-us-east-1.amazonaws.com/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- 📚 Multiple grade levels (3-4, 5-6, 7-8)
+- 🔊 Audio pronunciation of words (normal and slow speed)
+- ✅ Instant feedback on spelling attempts
+- 📊 Score tracking with percentage and progress
+- 📱 Mobile-friendly responsive design
+- ⏮️ Navigate between previous and next words
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting Started
 
-## Expanding the ESLint configuration
+### Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js (v16 or higher)
+- npm or yarn
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Clone the repository:
+```bash
+git clone <your-repo-url>
+cd spellbee-practice
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. Install dependencies:
+```bash
+npm install
 ```
+
+### Running Locally
+
+Start the development server:
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:5173`
+
+### Building for Production
+
+Build the project:
+```bash
+npm run build
+```
+
+Preview the production build locally:
+```bash
+npm run preview
+```
+
+The built files will be in the `dist` folder, ready to deploy.
+
+## Generating Audio Files
+
+The project uses Google Cloud Text-to-Speech API to generate audio pronunciations for spelling words.
+
+### Prerequisites for Audio Generation
+
+1. Install [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
+2. Authenticate with Google Cloud:
+```bash
+gcloud auth login
+```
+3. Set your project ID in the script (already set to `spell-bee-practice`)
+
+### Running the Text-to-Speech Script
+
+The `text-to-speech.sh` script generates MP3 audio files for words.
+
+**Configuration:**
+- Edit the `GRADE` variable in the script to match your grade level (e.g., `3_4_5`, `5_6`, `7_8`)
+- Audio files will be saved to `audio/{GRADE}/` folder
+
+**Generate audio for a single word:**
+```bash
+./text-to-speech.sh accommodation
+```
+
+**Generate audio from a word list file:**
+```bash
+./text-to-speech.sh inputwords.txt
+```
+
+**Example word list files:**
+- `3_4_inputwords.txt` - Grade 3-4 words
+- `5_6_inputwords.txt` - Grade 5-6 words
+- `7_8_inputwords.txt` - Grade 7-8 words
+
+The script will:
+- Create audio files in MP3 format
+- Use a female voice (en-US-Standard-C)
+- Speak at 0.75x speed for clearer pronunciation
+- Show progress for each word processed
+
+### Uploading to S3
+
+After generating audio files and building the project:
+
+1. Build the project:
+```bash
+npm run build
+```
+
+2. Upload to S3:
+```bash
+aws s3 sync dist/ s3://kids-spellbee-practice/public/ --delete
+aws s3 sync audio/ s3://kids-spellbee-practice/public/audio/ --delete
+```
+
+3. Ensure your S3 bucket is configured for static website hosting.
+
+## Project Structure
+
+```
+spellbee-practice/
+├── src/
+│   ├── App.tsx           # Main application component
+│   ├── App.css           # Styles including mobile responsive
+│   └── main.tsx          # Entry point
+├── audio/                # Generated audio files by grade
+│   ├── 3_4/
+│   ├── 5_6/
+│   └── 7_8/
+├── text-to-speech.sh     # Script to generate audio files
+├── *_inputwords.txt      # Word lists for each grade
+└── dist/                 # Production build output
+```
+
+## Technology Stack
+
+- **React** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **Google Cloud Text-to-Speech** - Audio generation
+- **AWS S3** - Static website hosting
+
+## Notes
+
+This is a quick sample project built to help my kids practice for their school spelling bee. It's not meant to be a production-grade application, but rather a practical tool for learning and practice.
+
+## License
+
+This is a personal project for educational purposes.
