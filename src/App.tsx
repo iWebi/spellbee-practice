@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import UserSelector from './UserSelector'
+import ProgressHistory from './ProgressHistory'
+import { getCurrentUser, clearCurrentUser, saveWordAttempt, getTodayProgress, clearUserHistory } from './storage'
 
 interface WordEntry {
   spellings: string[]
@@ -9,6 +12,8 @@ interface WordEntry {
 type GradeLevel = '3-4' | '5-6' | '7-8'
 
 function App() {
+  const [currentUser, setCurrentUserState] = useState<string | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
   const [word, setWord] = useState<WordEntry | null>(null)
   const [userInput, setUserInput] = useState('')
   const [feedback, setFeedback] = useState('')
@@ -21,6 +26,31 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [wordHistory, setWordHistory] = useState<WordEntry[]>([])
+  const [retryWords, setRetryWords] = useState<string[]>([])
+
+  useEffect(() => {
+    const user = getCurrentUser()
+    if (user) {
+      setCurrentUserState(user)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (gradeLevel && currentUser) {
+      fetchWords()
+      loadTodayProgress()
+    }
+  }, [gradeLevel, currentUser])
+
+  const loadTodayProgress = () => {
+    if (!currentUser || !gradeLevel) return
+    
+    const todayProgress = getTodayProgress(currentUser, gradeLevel)
+    if (todayProgress) {
+      setScore(todayProgress.score)
+      setTotalAttempts(todayProgress.totalAttempts)
+    }
+  }
 
   const getWordListUrl = (grade: GradeLevel): string => {
     const baseUrl = 'https://kids-spellbee-practice.s3.us-east-1.amazonaws.com/public'
@@ -32,13 +62,7 @@ function App() {
     return `${baseUrl}/${gradeMap[grade]}`
   }
 
-  useEffect(() => {
-    if (gradeLevel) {
-      fetchWords()
-    }
-  }, [gradeLevel])
-
-  const fetchWords = async () => {
+  const fetchWords = async (customWords?: string[]) => {
     if (!gradeLevel) return
     
     setLoading(true)
@@ -46,10 +70,29 @@ function App() {
     setWord(null)
     setUserInput('')
     setFeedback('')
-    setScore(0)
-    setTotalAttempts(0)
+    
+    // Only reset score if not loading custom retry words
+    if (!customWords) {
+      setScore(0)
+      setTotalAttempts(0)
+    }
+    
     setWordHistory([])
+    
     try {
+      if (customWords && customWords.length > 0) {
+        // Use custom word list for retry
+        const wordList = customWords.map(word => ({
+          spellings: [word],
+          primary: word
+        }))
+        setWords(wordList)
+        setRetryWords(customWords)
+        setLoading(false)
+        return
+      }
+      
+      setRetryWords([])
       const wordListUrl = getWordListUrl(gradeLevel)
       const response = await fetch(wordListUrl)
       if (!response.ok) {
@@ -144,11 +187,14 @@ function App() {
   }
 
   const checkSpelling = () => {
-    if (!word) return
+    if (!word || !currentUser || !gradeLevel) return
     const userAnswer = userInput.toLowerCase().trim()
     const isCorrect = word.spellings.some(spelling => spelling.toLowerCase() === userAnswer)
     
     setTotalAttempts(totalAttempts + 1)
+    
+    // Save to storage
+    saveWordAttempt(currentUser, gradeLevel, word.primary, isCorrect, userAnswer)
     
     if (isCorrect) {
       setFeedback('✅ Correct! Well done!')
@@ -161,6 +207,43 @@ function App() {
     }
   }
 
+  const handleUserSelected = (username: string) => {
+    setCurrentUserState(username)
+  }
+
+  const handleLogout = () => {
+    clearCurrentUser()
+    setCurrentUserState(null)
+    setGradeLevel(null)
+    setWord(null)
+    setWords([])
+    setScore(0)
+    setTotalAttempts(0)
+  }
+
+  const handleClearHistory = () => {
+    if (!currentUser) return
+    
+    if (window.confirm(`Are you sure you want to clear all history for ${currentUser}? This cannot be undone.`)) {
+      clearUserHistory(currentUser)
+      setScore(0)
+      setTotalAttempts(0)
+      setWord(null)
+      setWords([])
+      setGradeLevel(null)
+      alert('History cleared successfully!')
+    }
+  }
+
+  const handleRetryWords = (wordsToRetry: string[]) => {
+    setShowHistory(false)
+    fetchWords(wordsToRetry)
+  }
+
+  if (!currentUser) {
+    return <UserSelector onUserSelected={handleUserSelected} />
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && userInput.trim()) {
       checkSpelling()
@@ -169,7 +252,78 @@ function App() {
 
   return (
     <div className="app-container" style={{ padding: '1rem 2rem 2rem 2rem', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>🐝 Spelling Bee Practice</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <h1 style={{ margin: 0 }}>🐝 Spelling Bee Practice</h1>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.9rem', color: '#666' }}>👤 {currentUser}</span>
+          <button
+            onClick={() => setShowHistory(true)}
+            style={{
+              padding: '0.5rem 1rem',
+              fontSize: '0.9rem',
+              backgroundColor: '#2196F3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            📊 History
+          </button>
+          <button
+            onClick={handleClearHistory}
+            style={{
+              padding: '0.5rem 1rem',
+              fontSize: '0.9rem',
+              backgroundColor: '#FF9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+            title="Clear all history"
+          >
+            🗑️ Clear
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '0.5rem 1rem',
+              fontSize: '0.9rem',
+              backgroundColor: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500'
+            }}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {showHistory && (
+        <ProgressHistory
+          username={currentUser}
+          onClose={() => setShowHistory(false)}
+          onRetryWords={handleRetryWords}
+        />
+      )}
+      
+      {retryWords.length > 0 && (
+        <div style={{ 
+          marginBottom: '1rem', 
+          padding: '0.75rem', 
+          backgroundColor: '#fff3cd', 
+          borderRadius: '6px',
+          borderLeft: '4px solid #FF9800'
+        }}>
+          <strong>🔄 Retry Mode:</strong> Practicing {retryWords.length} misspelled word(s)
+        </div>
+      )}
       
       <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
         <p style={{ marginBottom: '0.75rem', fontWeight: 'bold' }}>Select Grade Level:</p>
@@ -199,7 +353,7 @@ function App() {
       ) : error ? (
         <div>
           <p style={{ color: '#721c24', marginBottom: '1rem' }}>Error: {error}</p>
-          <button onClick={fetchWords} style={{ 
+          <button onClick={() => fetchWords()} style={{ 
             padding: '0.75rem 1.5rem',
             backgroundColor: '#f44336',
             color: 'white',

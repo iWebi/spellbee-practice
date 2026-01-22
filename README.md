@@ -1,17 +1,21 @@
 # 🐝 Spelling Bee Practice
 
-A simple web application to help my kids practice spelling words for their school spelling bee activities. The app reads words aloud and lets them practice spelling with immediate feedback.
+A simple web application to help my kids practice spelling words for their school spelling bee activities. The app reads words aloud and lets them practice spelling with immediate feedback. Progress is tracked and saved locally for each user.
 
 **Live Demo:** http://kids-spellbee-practice.s3-website-us-east-1.amazonaws.com/
 
 ## Features
 
-- 📚 Multiple grade levels (3-4, 5-6, 7-8)
-- 🔊 Audio pronunciation of words (normal and slow speed)
-- ✅ Instant feedback on spelling attempts
-- 📊 Score tracking with percentage and progress
-- 📱 Mobile-friendly responsive design
-- ⏮️ Navigate between previous and next words
+- 👤 **Multi-user support** - Each family member can have their own profile
+- 📚 **Multiple grade levels** (3-4, 5-6, 7-8)
+- 🔊 **Audio pronunciation** of words (normal and slow speed)
+- ✅ **Instant feedback** on spelling attempts
+- 📊 **Progress tracking** - Scores and attempts saved automatically
+- 📅 **7-day history** - View past performance and misspelled words
+- 🔄 **Retry failed words** - Practice words you got wrong
+- 💾 **Local storage** - All data saved in browser (no server needed)
+- 📱 **Mobile-friendly** responsive design
+- ⏮️ **Navigate** between previous and next words
 
 ## Getting Started
 
@@ -56,6 +60,25 @@ npm run preview
 
 The built files will be in the `dist` folder, ready to deploy.
 
+## Using the App
+
+1. **Select or create a user** - Enter your name when you first open the app
+2. **Choose a grade level** - Select 3-4, 5-6, or 7-8
+3. **Start practicing** - Click "Start Practice" to begin
+4. **Listen and spell** - Hear the word and type your answer
+5. **View history** - Click "📊 History" to see past 7 days of practice
+6. **Retry mistakes** - Click on any day to see misspelled words and retry them
+
+## Progress Tracking
+
+The app automatically saves:
+- ✅ Every word attempt (correct or incorrect)
+- 📊 Daily scores and percentages
+- 📝 Your exact answers for review
+- 📅 Last 7 days of practice history
+
+All data is stored locally in your browser using localStorage, so your progress persists between sessions.
+
 ## Generating Audio Files
 
 The project uses Google Cloud Text-to-Speech API to generate audio pronunciations for spelling words.
@@ -74,7 +97,7 @@ gcloud auth login
 The `text-to-speech.sh` script generates MP3 audio files for words.
 
 **Configuration:**
-- Edit the `GRADE` variable in the script to match your grade level (e.g., `3_4_5`, `5_6`, `7_8`)
+- Edit the `GRADE` variable in the script to match your grade level (e.g., `3_4`, `5_6`, `7_8`)
 - Audio files will be saved to `audio/{GRADE}/` folder
 
 **Generate audio for a single word:**
@@ -84,7 +107,7 @@ The `text-to-speech.sh` script generates MP3 audio files for words.
 
 **Generate audio from a word list file:**
 ```bash
-./text-to-speech.sh inputwords.txt
+./text-to-speech.sh 3_4_inputwords.txt
 ```
 
 **Example word list files:**
@@ -120,16 +143,19 @@ aws s3 sync audio/ s3://kids-spellbee-practice/public/audio/ --delete
 ```
 spellbee-practice/
 ├── src/
-│   ├── App.tsx           # Main application component
-│   ├── App.css           # Styles including mobile responsive
-│   └── main.tsx          # Entry point
-├── audio/                # Generated audio files by grade
+│   ├── App.tsx              # Main application component
+│   ├── App.css              # Styles including mobile responsive
+│   ├── UserSelector.tsx     # User login/selection component
+│   ├── ProgressHistory.tsx  # History and retry component
+│   ├── storage.ts           # LocalStorage utilities
+│   └── main.tsx             # Entry point
+├── audio/                   # Generated audio files by grade
 │   ├── 3_4/
 │   ├── 5_6/
 │   └── 7_8/
-├── text-to-speech.sh     # Script to generate audio files
-├── *_inputwords.txt      # Word lists for each grade
-└── dist/                 # Production build output
+├── text-to-speech.sh        # Script to generate audio files
+├── *_inputwords.txt         # Word lists for each grade
+└── dist/                    # Production build output
 ```
 
 ## Technology Stack
@@ -137,8 +163,13 @@ spellbee-practice/
 - **React** - UI framework
 - **TypeScript** - Type safety
 - **Vite** - Build tool and dev server
+- **LocalStorage** - Client-side data persistence
 - **Google Cloud Text-to-Speech** - Audio generation
 - **AWS S3** - Static website hosting
+
+## Data Privacy
+
+All user data and progress is stored locally in your browser. No data is sent to any server. If you clear your browser data, your progress will be lost.
 
 ## Notes
 
