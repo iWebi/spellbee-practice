@@ -168,7 +168,7 @@ function App() {
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+    <div className="app-container" style={{ padding: '1rem 2rem 2rem 2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h1>🐝 Spelling Bee Practice</h1>
       
       <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
@@ -199,7 +199,15 @@ function App() {
       ) : error ? (
         <div>
           <p style={{ color: '#721c24', marginBottom: '1rem' }}>Error: {error}</p>
-          <button onClick={fetchWords} style={{ padding: '0.75rem 1.5rem' }}>
+          <button onClick={fetchWords} style={{ 
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '500'
+          }}>
             Retry
           </button>
         </div>
@@ -213,19 +221,28 @@ function App() {
               Ready to practice Grade {gradeLevel} spelling words
             </p>
           </div>
-          <button onClick={getNewWord} style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
+          <button onClick={getNewWord} style={{ 
+            fontSize: '1.2rem', 
+            padding: '1rem 2rem',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}>
             Start Practice
           </button>
         </div>
       ) : word ? (
         <div>
-          <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+          <div className="score-section" style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <p style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
                   Score: {score} / {totalAttempts}
                 </p>
-                <p style={{ fontSize: '0.95rem', color: '#555' }}>
+                <p className="score-detail" style={{ fontSize: '0.95rem', color: '#555' }}>
                   {totalAttempts > 0 ? `${Math.round((score / totalAttempts) * 100)}% correct` : 'No attempts yet'}
                 </p>
               </div>
@@ -233,19 +250,25 @@ function App() {
                 <p style={{ fontSize: '1.1rem', color: '#555' }}>
                   Total Words: {words.length}
                 </p>
-                <p style={{ fontSize: '0.95rem', color: '#777' }}>
+                <p className="score-detail" style={{ fontSize: '0.95rem', color: '#777' }}>
                   {words.length - totalAttempts} remaining
                 </p>
               </div>
             </div>
           </div>
-          <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <button 
               onClick={() => speakWord(word.primary)} 
               style={{ 
                 padding: '0.75rem 1.5rem',
                 flex: '1 1 auto',
-                minWidth: '140px'
+                minWidth: '140px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
               }}
             >
               🔊 Repeat Word
@@ -255,14 +278,20 @@ function App() {
               style={{ 
                 padding: '0.75rem 1.5rem',
                 flex: '1 1 auto',
-                minWidth: '140px'
+                minWidth: '140px',
+                backgroundColor: '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '500'
               }}
             >
               🐌 Slow Speed
             </button>
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
             <input
               type="text"
               value={userInput}
@@ -273,7 +302,7 @@ function App() {
                 fontSize: '1.2rem', 
                 padding: '0.75rem', 
                 width: '100%',
-                marginBottom: '1rem',
+                marginBottom: '0.75rem',
                 boxSizing: 'border-box'
               }}
               autoFocus
@@ -282,46 +311,61 @@ function App() {
               autoCapitalize="off"
               spellCheck="false"
             />
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ marginBottom: '1rem' }}>
               <button 
                 onClick={checkSpelling} 
                 disabled={!userInput.trim()}
                 style={{ 
                   fontSize: '1.1rem', 
                   padding: '0.75rem 2rem',
-                  flex: '1 1 auto',
-                  minWidth: '140px'
+                  width: '100%',
+                  backgroundColor: !userInput.trim() ? '#cccccc' : '#FF9800',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: !userInput.trim() ? 'not-allowed' : 'pointer',
+                  fontWeight: '600'
                 }}
               >
                 Check Spelling
               </button>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button 
                 onClick={getPreviousWord}
                 disabled={isPlaying || wordHistory.length === 0}
                 style={{ 
                   fontSize: '1.1rem', 
-                  padding: '0.75rem 2rem',
-                  flex: '1 1 auto',
-                  minWidth: '140px',
-                  opacity: (isPlaying || wordHistory.length === 0) ? 0.5 : 1,
-                  cursor: (isPlaying || wordHistory.length === 0) ? 'not-allowed' : 'pointer'
+                  padding: '0.75rem 1rem',
+                  flex: '1',
+                  backgroundColor: (isPlaying || wordHistory.length === 0) ? '#cccccc' : '#9C27B0',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: (isPlaying || wordHistory.length === 0) ? 'not-allowed' : 'pointer',
+                  fontWeight: '500'
                 }}
               >
-                ← Previous
+                <span className="btn-text-mobile">◀</span>
+                <span className="btn-text-desktop">◀ Previous</span>
               </button>
               <button 
                 onClick={getNewWord}
                 disabled={isPlaying}
                 style={{ 
                   fontSize: '1.1rem', 
-                  padding: '0.75rem 2rem',
-                  flex: '1 1 auto',
-                  minWidth: '140px',
-                  opacity: isPlaying ? 0.5 : 1,
-                  cursor: isPlaying ? 'not-allowed' : 'pointer'
+                  padding: '0.75rem 1rem',
+                  flex: '1',
+                  backgroundColor: isPlaying ? '#cccccc' : '#9C27B0',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: isPlaying ? 'not-allowed' : 'pointer',
+                  fontWeight: '500'
                 }}
               >
-                Next Word →
+                <span className="btn-text-mobile">▶</span>
+                <span className="btn-text-desktop">Next Word ▶</span>
               </button>
             </div>
           </div>

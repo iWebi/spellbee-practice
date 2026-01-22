@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-GRADE="3_4"  # Change this to your desired grade (e.g., 3_4_5, 6_7_8, etc.)
+GRADE="7_8"  # Change this to your desired grade (e.g., 3_4_5, 6_7_8, etc.)
 
 # Check if argument is provided
 if [ -z "$1" ]; then

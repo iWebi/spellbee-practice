@@ -40,3 +40,48 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Button text visibility for mobile/desktop */
+.btn-text-desktop {
+  display: inline;
+}
+
+.btn-text-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .btn-text-desktop {
+    display: none;
+  }
+  
+  .btn-text-mobile {
+    display: inline;
+  }
+  
+  /* Reduce spacing on mobile */
+  .score-section {
+    margin-bottom: 1rem !important;
+    padding: 0.5rem !important;
+  }
+  
+  .score-section p {
+    font-size: 1rem !important;
+    margin-bottom: 0.15rem !important;
+  }
+  
+  .score-section .score-detail {
+    font-size: 0.85rem !important;
+  }
+  
+  /* Reduce top padding on mobile */
+  .app-container {
+    padding: 0.5rem 1rem 1rem 1rem !important;
+  }
+  
+  .app-container h1 {
+    font-size: 1.5rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+}
