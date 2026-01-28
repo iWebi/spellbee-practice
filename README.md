@@ -2,6 +2,8 @@
 
 A simple web application to help my kids practice spelling words for their school spelling bee activities. The app reads words aloud and lets them practice spelling with immediate feedback. Progress is tracked and saved locally for each user.
 
+Complete project is Agentic AI generated using [Kiro IDE](https://kiro.dev).
+
 **Live Demo:** http://kids-spellbee-practice.s3-website-us-east-1.amazonaws.com/
 
 ## Features
