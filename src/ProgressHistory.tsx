@@ -12,11 +12,11 @@ interface ProgressHistoryProps {
 export default function ProgressHistory({ username, onClose, onRetryWords, onResumeFromDay }: ProgressHistoryProps) {
   const [history, setHistory] = useState<DayProgress[]>([])
   const [selectedDay, setSelectedDay] = useState<DayProgress | null>(null)
-  const [totalWordsForGrade, setTotalWordsForGrade] = useState<Record<string, number>>({
+  const totalWordsForGrade: Record<string, number> = {
     '3-4': 450,
     '5-6': 500,
     '7-8': 550
-  })
+  }
 
   useEffect(() => {
     const last7Days = getLast7DaysProgress(username)
