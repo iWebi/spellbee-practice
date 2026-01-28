@@ -6,11 +6,17 @@ interface ProgressHistoryProps {
   username: string
   onClose: () => void
   onRetryWords: (words: string[]) => void
+  onResumeFromDay?: (lastWord: string, allWords: string[], gradeLevel: string) => void
 }
 
-export default function ProgressHistory({ username, onClose, onRetryWords }: ProgressHistoryProps) {
+export default function ProgressHistory({ username, onClose, onRetryWords, onResumeFromDay }: ProgressHistoryProps) {
   const [history, setHistory] = useState<DayProgress[]>([])
   const [selectedDay, setSelectedDay] = useState<DayProgress | null>(null)
+  const [totalWordsForGrade, setTotalWordsForGrade] = useState<Record<string, number>>({
+    '3-4': 450,
+    '5-6': 500,
+    '7-8': 550
+  })
 
   useEffect(() => {
     const last7Days = getLast7DaysProgress(username)
@@ -36,10 +42,26 @@ export default function ProgressHistory({ username, onClose, onRetryWords }: Pro
     return day.attempts.filter(attempt => !attempt.correct)
   }
 
+  const isSessionIncomplete = (day: DayProgress): boolean => {
+    const totalWords = totalWordsForGrade[day.gradeLevel] || 500
+    return day.totalAttempts < totalWords
+  }
+
   const handleRetryMisspelled = (day: DayProgress) => {
     const misspelled = getMisspelledWords(day)
     const words = misspelled.map(attempt => attempt.word)
     onRetryWords(words)
+  }
+
+  const handleResumeFromDay = (day: DayProgress) => {
+    if (!onResumeFromDay) return
+    
+    // Get all words from this day's attempts in order
+    const allWords = day.attempts.map(attempt => attempt.word)
+    // Resume from the last word attempted
+    const lastWord = allWords[allWords.length - 1]
+    
+    onResumeFromDay(lastWord, allWords, day.gradeLevel)
   }
 
   if (selectedDay) {
@@ -92,7 +114,32 @@ export default function ProgressHistory({ username, onClose, onRetryWords }: Pro
             <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
               <strong>Score:</strong> {selectedDay.score} / {selectedDay.totalAttempts} ({Math.round((selectedDay.score / selectedDay.totalAttempts) * 100)}%)
             </p>
+            {isSessionIncomplete(selectedDay) && (
+              <p style={{ fontSize: '0.95rem', color: '#FF9800', marginTop: '0.5rem' }}>
+                ⚠️ Session incomplete - only {selectedDay.totalAttempts} of {totalWordsForGrade[selectedDay.gradeLevel]} words attempted
+              </p>
+            )}
           </div>
+
+          {isSessionIncomplete(selectedDay) && onResumeFromDay && (
+            <button
+              onClick={() => handleResumeFromDay(selectedDay)}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                backgroundColor: '#2196F3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                marginBottom: '1.5rem'
+              }}
+            >
+              ▶ Resume Practice
+            </button>
+          )}
 
           {misspelled.length > 0 ? (
             <>

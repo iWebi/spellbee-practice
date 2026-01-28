@@ -27,6 +27,7 @@ function App() {
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
   const [wordHistory, setWordHistory] = useState<WordEntry[]>([])
   const [retryWords, setRetryWords] = useState<string[]>([])
+  const [isResuming, setIsResuming] = useState(false)
 
   useEffect(() => {
     const user = getCurrentUser()
@@ -36,7 +37,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (gradeLevel && currentUser) {
+    if (gradeLevel && currentUser && !isResuming) {
       fetchWords()
       loadTodayProgress()
     }
@@ -160,17 +161,34 @@ function App() {
 
   const getNewWord = () => {
     if (words.length === 0) return
-    const randomWord = words[Math.floor(Math.random() * words.length)]
+    
+    let nextWord: WordEntry
+    
+    // If in retry mode (retryWords is not empty), go sequentially through the list
+    if (retryWords.length > 0 && word) {
+      const currentIndex = words.findIndex(w => w.primary === word.primary)
+      const nextIndex = currentIndex + 1
+      
+      if (nextIndex < words.length) {
+        nextWord = words[nextIndex]
+      } else {
+        // Reached the end, wrap around or pick random
+        nextWord = words[Math.floor(Math.random() * words.length)]
+      }
+    } else {
+      // Normal mode: pick random word
+      nextWord = words[Math.floor(Math.random() * words.length)]
+    }
     
     // Add current word to history before moving to next
     if (word) {
       setWordHistory([...wordHistory, word])
     }
     
-    setWord(randomWord)
+    setWord(nextWord)
     setUserInput('')
     setFeedback('')
-    speakWord(randomWord.primary)
+    speakWord(nextWord.primary)
   }
 
   const getPreviousWord = () => {
@@ -202,7 +220,7 @@ function App() {
       speakWord('Correct')
     } else {
       const allSpellings = word.spellings.join(' or ')
-      setFeedback(`❌ Incorrect. The correct spelling is: ${allSpellings}`)
+      setFeedback(`❌ Incorrect. The correct spelling is: <strong>${allSpellings}</strong>`)
       speakWord('Incorrect')
     }
   }
@@ -238,6 +256,70 @@ function App() {
   const handleRetryWords = (wordsToRetry: string[]) => {
     setShowHistory(false)
     fetchWords(wordsToRetry)
+  }
+
+  const handleResumeFromAttempt = async (startWord: string, allWords: string[], grade: string): Promise<void> => {
+    setShowHistory(false)
+    setIsResuming(true)
+    
+    // Set the grade level from the history
+    setGradeLevel(grade as GradeLevel)
+    
+    // Load the full word list from S3
+    try {
+      const wordListUrl = getWordListUrl(grade as GradeLevel)
+      const response = await fetch(wordListUrl)
+      if (!response.ok) {
+        throw new Error('Failed to fetch word list')
+      }
+      const text = await response.text()
+      const fullWordList = text.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .map(line => {
+          const spellings = line.split(',').map(w => w.trim()).filter(w => w.length > 0)
+          return {
+            spellings,
+            primary: spellings[0]
+          }
+        })
+        .sort((a, b) => a.primary.localeCompare(b.primary))
+      
+      setWords(fullWordList)
+      setRetryWords([]) // Clear retry mode since we're using full list
+      
+      // Find the starting word in the full list
+      const startWordEntry = fullWordList.find(w => w.primary === startWord)
+      
+      // Build word history from the original attempt words before the start word
+      const startIndex = allWords.findIndex(w => w === startWord)
+      if (startIndex > 0) {
+        const historyWords = allWords.slice(0, startIndex).map(wordStr => {
+          const entry = fullWordList.find(w => w.primary === wordStr)
+          return entry || { spellings: [wordStr], primary: wordStr }
+        })
+        setWordHistory(historyWords)
+      } else {
+        setWordHistory([])
+      }
+      
+      if (startWordEntry) {
+        setWord(startWordEntry)
+        setUserInput('')
+        setFeedback('')
+        
+        // Use setTimeout to ensure state is updated before speaking
+        setTimeout(() => {
+          speakWord(startWordEntry.primary)
+          setIsResuming(false)
+        }, 100)
+      } else {
+        setIsResuming(false)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load words')
+      setIsResuming(false)
+    }
   }
 
   if (!currentUser) {
@@ -313,6 +395,7 @@ function App() {
           username={currentUser}
           onClose={() => setShowHistory(false)}
           onRetryWords={handleRetryWords}
+          onResumeFromDay={handleResumeFromAttempt}
         />
       )}
       
@@ -322,9 +405,31 @@ function App() {
           padding: '0.75rem', 
           backgroundColor: '#fff3cd', 
           borderRadius: '6px',
-          borderLeft: '4px solid #FF9800'
+          borderLeft: '4px solid #FF9800',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '1rem'
         }}>
-          <strong>🔄 Retry Mode:</strong> Practicing {retryWords.length} misspelled word(s)
+          <div>
+            <strong>🔄 Retry Mode:</strong> Practicing {retryWords.length} misspelled word(s)
+          </div>
+          <button
+            onClick={() => fetchWords()}
+            style={{
+              padding: '0.5rem 1rem',
+              fontSize: '0.9rem',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Resume Normal Practice
+          </button>
         </div>
       )}
       
@@ -368,7 +473,7 @@ function App() {
             Retry
           </button>
         </div>
-      ) : words.length > 0 && !word ? (
+      ) : words.length > 0 && !word && !isResuming ? (
         <div>
           <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#e7f3ff', borderRadius: '8px' }}>
             <p style={{ fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
@@ -535,9 +640,9 @@ function App() {
               backgroundColor: feedback.includes('✅') ? '#d4edda' : '#f8d7da',
               color: feedback.includes('✅') ? '#155724' : '#721c24',
               marginTop: '1rem'
-            }}>
-              {feedback}
-            </div>
+            }}
+            dangerouslySetInnerHTML={{ __html: feedback.replace(/<strong>(.*?)<\/strong>/g, '<strong style="font-size: 1.6rem; font-weight: 800; color: #d32f2f; text-decoration: underline;">$1</strong>') }}
+            />
           )}
         </div>
       ) : null}
