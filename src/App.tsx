@@ -333,7 +333,13 @@ function App() {
   }
 
   return (
-    <div className="app-container" style={{ padding: '1rem 2rem 2rem 2rem', maxWidth: '600px', margin: '0 auto' }}>
+    <div className="app-container" style={{ 
+      padding: '1rem 2rem 2rem 2rem', 
+      maxWidth: '600px', 
+      margin: '0 auto',
+      minHeight: '100vh',
+      boxSizing: 'border-box'
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <h1 style={{ margin: 0 }}>🐝 Spelling Bee Practice</h1>
         <div className="header-buttons" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'nowrap' }}>
@@ -433,20 +439,32 @@ function App() {
         </div>
       )}
       
-      <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-        <p style={{ marginBottom: '0.75rem', fontWeight: 'bold' }}>Select Grade Level:</p>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '2px solid #dee2e6' }}>
+        <p style={{ marginBottom: '0.75rem', fontWeight: 'bold', fontSize: '1.1rem', color: '#212529' }}>Select Grade Level:</p>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           {(['3-4', '5-6', '7-8'] as GradeLevel[]).map((grade) => (
-            <label key={grade} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <label key={grade} style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              cursor: 'pointer',
+              padding: '0.5rem 1rem',
+              backgroundColor: gradeLevel === grade ? '#4CAF50' : 'white',
+              color: gradeLevel === grade ? 'white' : '#212529',
+              borderRadius: '6px',
+              border: '2px solid ' + (gradeLevel === grade ? '#4CAF50' : '#dee2e6'),
+              transition: 'all 0.2s',
+              minWidth: '120px',
+              justifyContent: 'center'
+            }}>
               <input
                 type="radio"
                 name="grade"
                 value={grade}
                 checked={gradeLevel === grade}
                 onChange={(e) => setGradeLevel(e.target.value as GradeLevel)}
-                style={{ marginRight: '0.5rem', cursor: 'pointer' }}
+                style={{ marginRight: '0.5rem', cursor: 'pointer', width: '18px', height: '18px' }}
               />
-              <span>Grade {grade}</span>
+              <span style={{ fontSize: '1rem', fontWeight: '500' }}>Grade {grade}</span>
             </label>
           ))}
         </div>
